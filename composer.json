@@ -1,0 +1,7 @@
+{
+    "require": {
+        "slim/slim": "^3.11",
+        "monolog/monolog": "^1.24",
+        "rmccue/requests": "^1.7"
+    }
+}
