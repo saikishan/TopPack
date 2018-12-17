@@ -67,7 +67,7 @@ class Package{
         $result_array = [];
         while (($row = $stmt->fetch())){
             self::$logger->addInfo($row);
-            array_push($result_array, new Package($row["name"], $row["package_id"], $row["count"]));
+            array_push($result_array, (new Package($row["name"], $row["package_id"], $row["count"]))->to_Dict());
         }
         return $result_array;
     }
@@ -76,7 +76,7 @@ class Package{
         $stmt = self::$db->query("select package_id,name from package where name like '$q%' order by name limit $limit");
         $result_array = [];
         while (($row = $stmt->fetch()) && sizeof($result_array) < 3){
-            array_push($result_array, new Package($row["name"], $row["package_id"],null,true));
+            array_push($result_array, (new Package($row["name"], $row["package_id"],null,true))->to_Dict());
         }
         return $result_array;
     }

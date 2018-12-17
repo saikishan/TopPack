@@ -23,7 +23,7 @@ class RepoController{
         $q = $request->getQueryParams("q",$default = null);
         if($q){
             $repos = Repo::search_repos_from_api($q);
-            return $response->withJson( $this->list_to_array($repos), 200 ) ;
+            return $response->withJson( $repos , 200 ) ;
         }
         return $response->withStatus(400);
         //this return a list of all the top matching repos and check and mark imported

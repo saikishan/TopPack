@@ -21,14 +21,14 @@ class PackageController
         $q = $request->getQueryParams("q",$default = null);
         if($q){
             $packages = Package::search_packages_from_db($q['q'],3);
-            return $response->withJson($this->list_to_array($packages), 200);
+            return $response->withJson($packages, 200);
         }
 //this return a list of all the top matching repos and check and mark imported
     }
 
     public function top_packs(Request $request, Response $response, array $args){
         $packages = Package::fetch_top_packages(10);
-        return $response->withJson($this->list_to_array($packages),200);
+        return $response->withJson($packages,200);
     }
 
     private function list_to_array($arry)
@@ -44,7 +44,7 @@ class PackageController
         $q = $request->getQueryParams("q",$default = null);
         if($q){
             $repos = Repo::get_repos_from_db_linked_to($q["id"]);
-            return $response->withJson($this->list_to_array($repos), 200);
+            return $response->withJson($repos, 200);
         }
     }
 

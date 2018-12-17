@@ -102,7 +102,7 @@ class Repo{
         $support  = self::get_status_for_api_response($JsonObj_Arr);
         foreach($JsonObj_Arr["items"] as $x){
             $new_repo = new Repo($x['full_name'], $x['clone_url'], $x['id'], $x['stargazers_count'], $support[ $x["id"] ]);
-            array_push($result_array, $new_repo);
+            array_push($result_array, $new_repo->to_Dict());
         }
         return $result_array;
     }
@@ -110,7 +110,8 @@ class Repo{
         $stmt = self::$db->query("select repo.repo_id,repo.name,repo.url,repo.stars from repo left join repo_packages on repo.repo_id = repo_packages.repo_id where repo_packages.package_id= $id order by repo.stars desc limit 3");
         $result_array = [];
         while (($row = $stmt->fetch()) && sizeof($result_array) < 3){
-            array_push($result_array, new Repo($row["name"], $row["url"] ,$row["repo_id"], $row["stars"], true));
+
+            array_push($result_array, (new Repo($row["name"], $row["url"] ,$row["repo_id"], $row["stars"], true))->to_Dict());
         }
         return $result_array;
 
