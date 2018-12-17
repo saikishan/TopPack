@@ -22,12 +22,15 @@ class Repo{
     private static  $db,$logger;
     private static $insert_query, $insert_link_query;
 
-    public function __construct($name, $url, $id, $stars){
+    public function __construct($name, $url, $id, $stars, $status=null){
         $this->name = $name;
         $this->url = $url;
         $this->repo_id = $id;
         $this->stars = $stars;
-        $this->save_status = $this->check_status($id);
+        if ($status==null){
+            $this->save_status = $this->check_status($id);
+        }
+        $this->save_status = $status;
     }
 
     private function check_status($id){
@@ -36,6 +39,22 @@ class Repo{
             return true;
         }
         return false;
+    }
+
+    private static function get_status_for_api_response($jsonObj){
+        $li = '';
+        $result = ["test" => "hello"];
+        foreach($jsonObj["items"] as $x){
+            $li = $li.$x['id'].", ";
+            $result[$x["id"]] = false;
+        }
+        if (strlen($li))
+        $li = strrev(substr(strrev($li),2));
+        $stmt = self::$db->query(" select * from repo where repo_id in ($li)");
+        while (($row = $stmt->fetch())){
+            $result[$row["repo_id"]] = true;
+        }
+        return $result;
     }
 
     public static  function set_static_db_setup($db, $logger){
@@ -55,7 +74,6 @@ class Repo{
             if ($this->packages){
                 foreach ($this->packages as $package){
                     $package->save();
-                    $this->log_line('saved $package->name');
                     $this->repo_package_linker($package);
                 }
             }
@@ -81,13 +99,22 @@ class Repo{
         print "hello";
         $JsonObj_Arr = json_decode($response->body, true);
         $result_array = [];
+        $support  = self::get_status_for_api_response($JsonObj_Arr);
         foreach($JsonObj_Arr["items"] as $x){
-            $new_repo = new Repo($x['full_name'], $x['url'], $x['id'], $x['stargazers_count']);
+            $new_repo = new Repo($x['full_name'], $x['clone_url'], $x['id'], $x['stargazers_count'], $support[ $x["id"] ]);
             array_push($result_array, $new_repo);
         }
         return $result_array;
     }
+    public static function get_repos_from_db_linked_to($id){
+        $stmt = self::$db->query("select repo.repo_id,repo.name,repo.url,repo.stars from repo left join repo_packages on repo.repo_id = repo_packages.repo_id where repo_packages.package_id= $id order by repo.stars desc limit 3");
+        $result_array = [];
+        while (($row = $stmt->fetch()) && sizeof($result_array) < 3){
+            array_push($result_array, new Repo($row["name"], $row["url"] ,$row["repo_id"], $row["stars"], true));
+        }
+        return $result_array;
 
+    }
     private function  repo_package_linker($package){
         $stmt = self::$insert_link_query->execute([$this->repo_id, $package->package_id]);
         if($stmt){

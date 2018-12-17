@@ -1,5 +1,7 @@
 <?php
-
+use \Psr\Http\Message\ServerRequestInterface as Request;
+use \Psr\Http\Message\ResponseInterface as Response;
+use Interop\Container\ContainerInterface;
 class PackageController
 {
     private $db;
@@ -14,16 +16,19 @@ class PackageController
 
     }
 
-    private function log_line($str)
-    {
-        self::$logger->addInfo(" from  logger in package controller $str");
-    }
-
     public function index(Request $request, Response $response, array $args)
     {
-        $q = $request->getQueryParams("q", $default = null);
-
+        $q = $request->getQueryParams("q",$default = null);
+        if($q){
+            $packages = Package::search_packages_from_db($q['q'],3);
+            return $response->withJson($this->list_to_array($packages), 200);
+        }
 //this return a list of all the top matching repos and check and mark imported
+    }
+
+    public function top_packs(Request $request, Response $response, array $args){
+        $packages = Package::fetch_top_packages(10);
+        return $response->withJson($this->list_to_array($packages),200);
     }
 
     private function list_to_array($arry)
@@ -35,18 +40,12 @@ class PackageController
         return $reslt_arr;
     }
 
-    public function process_and_save(Request $request, Response $response, array $args)
-    {
-        $parsed_Body = $request->getParsedBody();
-        $new_repo = new Repo($parsed_Body["name"], $parsed_Body["url"], $parsed_Body["id"], $parsed_Body["stars"]);
-
-
-        if (!$new_repo->save_status) {
-            $new_repo->save();
-            $response->withStatus(200);
+    public function show(Request $request, Response $response, array $args){
+        $q = $request->getQueryParams("q",$default = null);
+        if($q){
+            $repos = Repo::get_repos_from_db_linked_to($q["id"]);
+            return $response->withJson($this->list_to_array($repos), 200);
         }
-        $response->withStatus(202);
-
-        return $response;
     }
+
 }

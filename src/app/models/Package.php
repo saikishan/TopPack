@@ -15,12 +15,20 @@ class Package{
     public $package_id;
     public $name;
     public $save_status;
+    public $usage_count;
     private static  $db,$logger;
     private static $insert_query;
 
-    public function __construct($name){
+    public function __construct($name,$id=null,$count=null, $save_status=null){
+        $this->package_id = $id;
         $this->name = $name;
-        $this->save_status = $this->check_status($name);
+        $this->usage_count = $count;
+        if ($save_status == null){
+            $this->save_status = $this->check_status($name);
+        }
+        else{
+            $this->save_status = $save_status;
+        }
     }
     private function  log_line($str){
         self::$logger->addInfo(" from  logger in PackageModel $str");
@@ -54,6 +62,31 @@ class Package{
         return false;
     }
 
+    public static function fetch_top_packages($limit){
+        $stmt = self::$db->query("select package.package_id,package.name,count(repo_id) from repo_packages right join package on package.package_id = repo_packages.package_id group by package.package_id order by count(repo_id) Desc limit $limit");
+        $result_array = [];
+        while (($row = $stmt->fetch())){
+            self::$logger->addInfo($row);
+            array_push($result_array, new Package($row["name"], $row["package_id"], $row["count"]));
+        }
+        return $result_array;
+    }
+
+    public static function search_packages_from_db($q, $limit){
+        $stmt = self::$db->query("select package_id,name from package where name like '$q%' order by name limit $limit");
+        $result_array = [];
+        while (($row = $stmt->fetch()) && sizeof($result_array) < 3){
+            array_push($result_array, new Package($row["name"], $row["package_id"],null,true));
+        }
+        return $result_array;
+    }
+    public function to_Dict(){
+        $obj_dict  = array("package_id"=> $this->package_id, "name" => $this->name);
+        if ($this->usage_count){
+            $obj_dict["count"] = $this->usage_count;
+        }
+        return $obj_dict;
+    }
     public static function search_packages_from_repo($name){
         $headers = array('Accept' => 'application/json');
         $response = Requests::get("https://raw.githubusercontent.com/$name/master/package.json");//
@@ -70,7 +103,10 @@ class Package{
         return $result_array;
     }
 }
-
+//select * from repo
+//left join repo_packages on repo.repo_id = repo_packages.repo_id
+//where repo_packages.package_id= 9
+//order by repo.stars desc limit 3
 //Package::set_static_db_setup($pdo);
 //$s = Package::search_packages_from_repo("rg3/youtube-dl");
 //$s2 =  Package::search_packages_from_repo("jhen0409/react-native-debugger");
