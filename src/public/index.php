@@ -1,9 +1,14 @@
 <?php
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
-
+require_once '../../vendor/rmccue/requests/library/Requests.php';
+Requests::register_autoloader();
 require '../../vendor/autoload.php';
 require './app.php';
+require '../app/models/Package.php';
+require '../app/models/Repo.php';
+require "../app/controllers/repocontroller.php";
+require "../app/controllers/packagecontroller.php";
 require '../app/routes/reporouter.php';
 require '../app/routes/packagerouter.php';
 
